@@ -8,13 +8,13 @@ export const useSessionStore = defineStore('session', () => {
   const loading = ref(false)
   const error = ref(null)
 
-  const userId = import.meta.env.VITE_DEFAULT_USER_ID ?? 'U123'
+  const userId = ref(import.meta.env.VITE_DEFAULT_USER_ID ?? 'U123')
 
   async function fetchSessions() {
     loading.value = true
     error.value = null
     try {
-      const data = await sessionsApi.list(userId)
+      const data = await sessionsApi.list(userId.value)
       sessions.value = data.sessions ?? []
     } catch (e) {
       error.value = e.message

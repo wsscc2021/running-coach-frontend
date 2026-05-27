@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSessionStore } from '@/stores/session'
 import StatCard from '@/components/StatCard.vue'
@@ -13,26 +13,51 @@ const router = useRouter()
 
 const activeTab = ref('heartRate')
 
-const tabs = [
-  { key: 'heartRate',       label: '심박수' },
-  { key: 'cadence',         label: '호흡'   },
-  { key: 'speed',           label: '페이스' },
-  { key: 'distance',        label: '거리'   }
-]
+// sessionId가 바뀔 때마다 (최초 마운트 포함) 데이터 재요청
+watch(
+  () => props.sessionId,
+  (id) => { activeTab.value = 'heartRate'; store.fetchEvents(id) },
+  { immediate: true }
+)
 
-const chartMeta = {
-  heartRate:       { title: '심박수 변화',   subtitle: '실시간 심박수 모니터링' },
-  cadence:         { title: '케이던스 변화', subtitle: '분당 걸음 수 (spm)' },
-  speed:           { title: '페이스 변화',   subtitle: '분당 페이스 (min/km)' },
-  distance:        { title: '누적 거리',     subtitle: '시간에 따른 누적 이동 거리' },
-  oxygenSaturation:{ title: '산소포화도',    subtitle: '혈중 산소포화도 (%)' }
-}
-
-onMounted(() => store.fetchEvents(props.sessionId))
-
-// ─── 통계 계산 ──────────────────────────────────────────────────
+// ─── 탭 정의 ────────────────────────────────────────────────────
 const events = computed(() => store.currentEvents)
 
+const tabs = computed(() => [
+  { key: 'heartRate', label: '심박수', count: events.value?.heartRate?.length ?? 0 },
+  { key: 'cadence',   label: '호흡',   count: events.value?.cadence?.length   ?? 0 },
+  { key: 'speed',     label: '페이스', count: events.value?.speed?.length      ?? 0 },
+  { key: 'distance',  label: '거리',   count: events.value?.speed?.length      ?? 0 }
+])
+
+const chartMeta = {
+  heartRate: { title: '심박수 변화',   subtitle: '실시간 심박수 모니터링' },
+  cadence:   { title: '케이던스 변화', subtitle: '분당 걸음 수 (spm)' },
+  speed:     { title: '페이스 변화',   subtitle: '분당 페이스 (min/km)' },
+  distance:  { title: '누적 거리',     subtitle: '시간에 따른 누적 이동 거리' }
+}
+
+// ─── 세션 메타데이터 (sessions 목록에서 조회) ─────────────────────
+const sessionMeta = computed(() =>
+  store.sessions.find(s => s.sessionId === props.sessionId)
+)
+
+function formatDate(iso) {
+  if (!iso) return ''
+  return new Date(iso).toLocaleDateString('ko-KR', {
+    month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+  })
+}
+
+function formatDuration(startIso, endIso) {
+  if (!startIso || !endIso) return ''
+  const mins = Math.round((new Date(endIso) - new Date(startIso)) / 60000)
+  return mins >= 60
+    ? `${Math.floor(mins / 60)}시간 ${mins % 60}분`
+    : `${mins}분`
+}
+
+// ─── 통계 계산 ──────────────────────────────────────────────────
 const avgHeartRate = computed(() => {
   const data = events.value?.heartRate ?? []
   if (!data.length) return '--'
@@ -78,17 +103,35 @@ const currentEvents = computed(() => {
 
 <template>
   <div>
-    <!-- 뒤로가기 -->
-    <button class="back-btn" @click="router.push('/dashboard')">
-      ‹ 세션 목록
-    </button>
+    <!-- ── 헤더 ── -->
+    <div class="view-head">
+      <button class="back-btn" @click="router.push('/dashboard')">‹ 세션 목록</button>
+      <div v-if="sessionMeta" class="session-info">
+        <span class="session-date">{{ formatDate(sessionMeta.startTime) }}</span>
+        <span class="session-dur">{{ formatDuration(sessionMeta.startTime, sessionMeta.endTime) }}</span>
+      </div>
+    </div>
 
-    <!-- 로딩 / 에러 -->
-    <div v-if="store.loading" class="state-msg">데이터를 불러오는 중...</div>
-    <div v-else-if="store.error" class="state-msg error">{{ store.error }}</div>
+    <!-- ── 로딩 ── -->
+    <div v-if="store.loading" class="state-msg">
+      <div class="spinner" />
+      데이터를 불러오는 중...
+    </div>
 
+    <!-- ── 에러 ── -->
+    <div v-else-if="store.error" class="state-msg error">
+      {{ store.error }}
+      <button class="retry-btn" @click="store.fetchEvents(props.sessionId)">다시 시도</button>
+    </div>
+
+    <!-- ── 데이터 없음 ── -->
+    <div v-else-if="events && !events.heartRate?.length && !events.speed?.length" class="state-msg">
+      이 세션에 저장된 데이터가 없습니다.
+    </div>
+
+    <!-- ── 콘텐츠 ── -->
     <template v-else-if="events">
-      <!-- ── 통계 카드 ── -->
+      <!-- 통계 카드 -->
       <div class="stats">
         <StatCard label="총 거리" :value="totalDistance" color="blue">
           <svg width="20" height="20" fill="none" stroke="#3b82f6" stroke-width="2" viewBox="0 0 24 24">
@@ -112,7 +155,7 @@ const currentEvents = computed(() => {
         </StatCard>
       </div>
 
-      <!-- ── 차트 탭 ── -->
+      <!-- 탭 (샘플 수 뱃지 포함) -->
       <div class="tab-bar">
         <button
           v-for="tab in tabs"
@@ -122,10 +165,11 @@ const currentEvents = computed(() => {
           @click="activeTab = tab.key"
         >
           {{ tab.label }}
+          <span v-if="tab.count" class="tab-count">{{ tab.count }}</span>
         </button>
       </div>
 
-      <!-- ── 차트 ── -->
+      <!-- 차트 -->
       <SensorChart
         :events="currentEvents"
         :type="activeTab"
@@ -133,33 +177,60 @@ const currentEvents = computed(() => {
         :subtitle="chartMeta[activeTab].subtitle"
       />
 
-      <!-- 심박수 구간 범례 (심박수 탭에서만 표시) -->
+      <!-- 심박수 구간 범례 -->
       <HeartRateZones v-if="activeTab === 'heartRate'" />
     </template>
   </div>
 </template>
 
 <style scoped>
+/* ── 헤더 ── */
+.view-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
 .back-btn {
   background: none;
   border: none;
   color: #3b82f6;
   font-size: 14px;
   font-weight: 500;
-  margin-bottom: 20px;
   padding: 0;
+  flex-shrink: 0;
 }
-
 .back-btn:hover { text-decoration: underline; }
 
-/* ── Stats ─────────────────────────────────── */
+.session-info {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.session-date {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.session-dur {
+  font-size: 12px;
+  color: #94a3b8;
+  background: #f1f5f9;
+  border-radius: 6px;
+  padding: 2px 8px;
+}
+
+/* ── 통계 카드 ── */
 .stats {
   display: flex;
   gap: 16px;
   margin-bottom: 20px;
 }
 
-/* ── Tab bar ────────────────────────────────── */
+/* ── 탭 ── */
 .tab-bar {
   display: flex;
   background: #fff;
@@ -174,12 +245,16 @@ const currentEvents = computed(() => {
   flex: 1;
   background: none;
   border: none;
-  padding: 9px 0;
+  padding: 9px 4px;
   border-radius: 7px;
   font-size: 13.5px;
   font-weight: 500;
   color: #64748b;
   transition: background 0.15s, color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
 }
 
 .tab-btn.active {
@@ -190,9 +265,26 @@ const currentEvents = computed(() => {
 
 .tab-btn:hover:not(.active) { background: #f8fafc; }
 
-/* ── States ─────────────────────────────────── */
+.tab-count {
+  font-size: 11px;
+  background: #e2e8f0;
+  color: #64748b;
+  border-radius: 10px;
+  padding: 1px 6px;
+  font-weight: 600;
+}
+
+.tab-btn.active .tab-count {
+  background: #3b82f6;
+  color: #fff;
+}
+
+/* ── 상태 ── */
 .state-msg {
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
   padding: 80px 0;
   color: #94a3b8;
   font-size: 14px;
@@ -200,7 +292,28 @@ const currentEvents = computed(() => {
 
 .state-msg.error { color: #ef4444; }
 
-/* ── Responsive ─────────────────────────────── */
+.retry-btn {
+  background: #f1f5f9;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #3b82f6;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── 반응형 ── */
 @media (max-width: 640px) {
   .stats { flex-wrap: wrap; }
   .stats > * { flex: calc(50% - 8px); }
