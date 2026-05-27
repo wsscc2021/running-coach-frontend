@@ -126,7 +126,7 @@ const chartOptions = computed(() => {
       },
       y: {
         min:  0,
-        ...(cfg.yMax ? { max: cfg.yMax } : {}),
+        ...(cfg.yMax ? { suggestedMax: cfg.yMax } : {}),
         grid:  { color: 'rgba(0,0,0,0.06)', borderDash: [4, 4] },
         ticks: {
           color: '#94a3b8',
