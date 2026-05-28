@@ -57,16 +57,42 @@ function formatDuration(startIso, endIso) {
     : `${mins}분`
 }
 
+// ─── 일시정지 필터링 ─────────────────────────────────────────────
+// speed 이벤트 간 간격이 중앙값의 3배를 초과하면 해당 구간을 일시정지로 판단
+const PAUSE_GAP_MS = 65_000  // 1분 5초 초과 공백이면 일시정지 구간
+
+const pauseIntervals = computed(() => {
+  const speedData = events.value?.speed ?? []
+  if (speedData.length < 2) return []
+
+  const intervals = []
+  for (let i = 1; i < speedData.length; i++) {
+    const start = new Date(speedData[i - 1].measuredAt).getTime()
+    const end   = new Date(speedData[i].measuredAt).getTime()
+    if (end - start > PAUSE_GAP_MS) intervals.push({ start, end })
+  }
+  return intervals
+})
+
+function isActive(iso) {
+  const t = new Date(iso).getTime()
+  return !pauseIntervals.value.some(({ start, end }) => t > start && t < end)
+}
+
+const activeHeartRate = computed(() => (events.value?.heartRate ?? []).filter(e => isActive(e.measuredAt)))
+const activeSpeed     = computed(() => (events.value?.speed     ?? []).filter(e => isActive(e.measuredAt)))
+const activeCadence   = computed(() => (events.value?.cadence   ?? []).filter(e => isActive(e.measuredAt)))
+
 // ─── 통계 계산 ──────────────────────────────────────────────────
 const avgHeartRate = computed(() => {
-  const data = events.value?.heartRate ?? []
+  const data = activeHeartRate.value
   if (!data.length) return '--'
   const avg = data.reduce((s, e) => s + e.bpm, 0) / data.length
   return `${Math.round(avg)} bpm`
 })
 
 const avgPace = computed(() => {
-  const data = events.value?.speed ?? []
+  const data = activeSpeed.value
   if (!data.length) return '--:--'
   const avgMs = data.reduce((s, e) => s + e.metersPerSecond, 0) / data.length
   if (avgMs <= 0) return '--:--'
@@ -77,14 +103,14 @@ const avgPace = computed(() => {
 })
 
 const avgCadence = computed(() => {
-  const data = events.value?.cadence ?? []
+  const data = activeCadence.value
   if (!data.length) return '--'
   const avg = data.reduce((s, e) => s + e.stepsPerMinute, 0) / data.length
   return `${Math.round(avg)} /분`
 })
 
 const totalDistance = computed(() => {
-  const data = events.value?.speed ?? []
+  const data = activeSpeed.value
   if (data.length < 2) return '--'
   let km = 0
   for (let i = 1; i < data.length; i++) {
@@ -96,8 +122,11 @@ const totalDistance = computed(() => {
 
 const currentEvents = computed(() => {
   if (!events.value) return []
-  if (activeTab.value === 'distance') return events.value.speed ?? []
-  return events.value[activeTab.value] ?? []
+  if (activeTab.value === 'distance') return activeSpeed.value
+  if (activeTab.value === 'heartRate') return activeHeartRate.value
+  if (activeTab.value === 'cadence')   return activeCadence.value
+  if (activeTab.value === 'speed')     return activeSpeed.value
+  return (events.value[activeTab.value] ?? []).filter(e => isActive(e.measuredAt))
 })
 </script>
 
