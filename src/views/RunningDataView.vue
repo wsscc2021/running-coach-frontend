@@ -25,16 +25,14 @@ const events = computed(() => store.currentEvents)
 
 const tabs = computed(() => [
   { key: 'heartRate', label: '심박수', count: events.value?.heartRate?.length ?? 0 },
-  { key: 'cadence',   label: '호흡',   count: events.value?.cadence?.length   ?? 0 },
   { key: 'speed',     label: '페이스', count: events.value?.speed?.length      ?? 0 },
   { key: 'distance',  label: '거리',   count: events.value?.speed?.length      ?? 0 }
 ])
 
 const chartMeta = {
-  heartRate: { title: '심박수 변화',   subtitle: '실시간 심박수 모니터링' },
-  cadence:   { title: '케이던스 변화', subtitle: '분당 걸음 수 (spm)' },
-  speed:     { title: '페이스 변화',   subtitle: '분당 페이스 (min/km)' },
-  distance:  { title: '누적 거리',     subtitle: '시간에 따른 누적 이동 거리' }
+  heartRate: { title: '심박수 변화', subtitle: '실시간 심박수 모니터링' },
+  speed:     { title: '페이스 변화', subtitle: '분당 페이스 (min/km)' },
+  distance:  { title: '누적 거리',   subtitle: '시간에 따른 누적 이동 거리' }
 }
 
 // ─── 세션 메타데이터 (sessions 목록에서 조회) ─────────────────────
@@ -106,7 +104,7 @@ const avgCadence = computed(() => {
   const data = activeCadence.value
   if (!data.length) return '--'
   const avg = data.reduce((s, e) => s + e.stepsPerMinute, 0) / data.length
-  return `${Math.round(avg)} /분`
+  return `${avg.toFixed(1)} spm`
 })
 
 const totalDistance = computed(() => {
