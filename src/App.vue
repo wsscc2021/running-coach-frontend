@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import CollectionToggle from '@/components/CollectionToggle.vue'
 
 const router = useRouter()
 const route  = useRoute()
@@ -21,9 +22,12 @@ function navigate(item) {
   <div class="shell">
     <header class="header">
       <div class="header-inner">
-        <div class="brand">
-          <span class="brand-icon">👟</span>
-          <span class="brand-name">발걸음 분석 시스템</span>
+        <div class="header-top">
+          <div class="brand">
+            <span class="brand-icon">👟</span>
+            <span class="brand-name">발걸음 분석 시스템</span>
+          </div>
+          <CollectionToggle />
         </div>
         <nav class="nav">
           <button
@@ -66,6 +70,12 @@ function navigate(item) {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 24px;
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .brand {
