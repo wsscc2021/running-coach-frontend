@@ -29,18 +29,6 @@ function navigate(item) {
           </div>
           <CollectionToggle />
         </div>
-        <nav class="nav">
-          <button
-            v-for="item in navItems"
-            :key="item.label"
-            class="nav-btn"
-            :class="{ active: item.active(route.path) }"
-            @click="navigate(item)"
-          >
-            <span class="nav-icon">{{ item.icon }}</span>
-            {{ item.label }}
-          </button>
-        </nav>
       </div>
     </header>
 
