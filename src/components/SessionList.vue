@@ -20,6 +20,22 @@ function formatDuration(startIso, endIso) {
   const m = mins % 60
   return h > 0 ? `${h}시간 ${m}분` : `${m}분`
 }
+
+function handleClick(session) {
+  if (session.sessionType === 'foot_pressure') {
+    router.push(`/session/${session.sessionId}/foot-pressure`)
+  } else {
+    router.push(`/session/${session.sessionId}`)
+  }
+}
+
+function sessionIcon(session) {
+  return session.sessionType === 'foot_pressure' ? '👣' : '🏃'
+}
+
+function sessionLabel(session) {
+  return session.sessionType === 'foot_pressure' ? '발 압력' : '런닝'
+}
 </script>
 
 <template>
@@ -28,12 +44,14 @@ function formatDuration(startIso, endIso) {
       v-for="session in sessions"
       :key="session.sessionId"
       class="item"
-      @click="router.push(`/session/${session.sessionId}`)"
+      @click="handleClick(session)"
     >
-      <div class="item-icon">🏃</div>
+      <div class="item-icon">{{ sessionIcon(session) }}</div>
       <div class="item-info">
         <p class="item-date">{{ formatDate(session.startTime) }}</p>
         <p class="item-meta">
+          <span class="session-type-badge" :class="session.sessionType">{{ sessionLabel(session) }}</span>
+          <span class="dot">·</span>
           {{ formatDuration(session.startTime, session.endTime) }}
           <span class="dot">·</span>
           {{ session.deviceId }}
@@ -99,6 +117,23 @@ function formatDuration(startIso, endIso) {
 
 .dot {
   margin: 0 4px;
+}
+
+.session-type-badge {
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+.session-type-badge.running {
+  background: #eff6ff;
+  color: #3b82f6;
+}
+
+.session-type-badge.foot_pressure {
+  background: #fdf4ff;
+  color: #a855f7;
 }
 
 .item-arrow {

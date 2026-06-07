@@ -14,6 +14,12 @@ const router = createRouter({
       props: true
     },
     {
+      path: '/session/:sessionId/foot-pressure',
+      name: 'foot-pressure-session',
+      component: () => import('@/views/FootPressureView.vue'),
+      props: true
+    },
+    {
       path: '/foot-pressure',
       name: 'foot-pressure',
       component: () => import('@/views/FootPressureView.vue')
