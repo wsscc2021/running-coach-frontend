@@ -127,11 +127,11 @@ function formatDuration(s, e) {
 
     <!-- 주 탭 -->
     <div class="main-tab-bar">
-      <button class="main-tab" :class="{ active: activeTab === 'running' }"
+      <button class="main-tab running" :class="{ active: activeTab === 'running' }"
         @click="activeTab = 'running'">
         🏃 러닝 데이터
       </button>
-      <button class="main-tab" :class="{ active: activeTab === 'footPressure' }"
+      <button class="main-tab fp" :class="{ active: activeTab === 'footPressure' }"
         @click="activeTab = 'footPressure'">
         👣 발 압력
       </button>
@@ -255,9 +255,8 @@ function formatDuration(s, e) {
   transition: all 0.15s;
 }
 .main-tab:hover { border-color: #cbd5e1; color: #334155; }
-.main-tab.active.running    { border-color: #3b82f6; color: #2563eb; background: #eff6ff; }
-.main-tab.active.footPressure,
-.main-tab:nth-child(2).active { border-color: #a855f7; color: #9333ea; background: #faf5ff; }
+.main-tab.running.active { border-color: #3b82f6; color: #2563eb; background: #eff6ff; }
+.main-tab.fp.active      { border-color: #a855f7; color: #9333ea; background: #faf5ff; }
 
 /* ── 러닝 탭 공통 ── */
 .stats { display: flex; gap: 16px; margin-bottom: 20px; }
