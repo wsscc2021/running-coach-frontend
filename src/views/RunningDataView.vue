@@ -44,13 +44,6 @@ function selectFpSession(session) {
   store.fetchFpEvents(session.sessionId)
 }
 
-function formatDate(iso) {
-  if (!iso) return ''
-  return new Date(iso).toLocaleDateString('ko-KR', {
-    month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
-  })
-}
-
 const chartMeta = {
   heartRate: { title: '심박수 변화', subtitle: '실시간 심박수 모니터링' },
   speed:     { title: '페이스 변화', subtitle: '분당 페이스 (min/km)' },
