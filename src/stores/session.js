@@ -36,5 +36,20 @@ export const useSessionStore = defineStore('session', () => {
     }
   }
 
-  return { sessions, currentEvents, loading, error, userId, fetchSessions, fetchEvents }
+  const fpEvents  = ref(null)
+  const fpLoading = ref(false)
+
+  async function fetchFpEvents(sessionId) {
+    fpLoading.value = true
+    fpEvents.value  = null
+    try {
+      fpEvents.value = await sessionsApi.getEvents(sessionId)
+    } catch (e) {
+      error.value = e.message
+    } finally {
+      fpLoading.value = false
+    }
+  }
+
+  return { sessions, currentEvents, loading, error, userId, fetchSessions, fetchEvents, fpEvents, fpLoading, fetchFpEvents }
 })
