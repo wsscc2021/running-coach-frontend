@@ -24,12 +24,12 @@ function pressureColor(pct) {
 
 // 핀 위치 (viewBox "0 0 110 285", 위=발가락 아래=뒤꿈치)
 const SENSOR_POS = [
-  { x: 38, y: 52  },  // pin1 - 전족부 내측 (발가락)
-  { x: 56, y: 44  },  // pin2 - 전족부 중앙 (발가락)
-  { x: 73, y: 56  },  // pin3 - 전족부 외측 (전족부)
-  { x: 36, y: 128 },  // pin4 - 중족부 내측
-  { x: 71, y: 132 },  // pin5 - 중족부 외측
-  { x: 52, y: 218 },  // pin6 - 뒤꿈치
+  { x: 38, y: 52  },  // pin1 - 발가락 내측
+  { x: 56, y: 44  },  // pin2 - 발가락 중앙
+  { x: 73, y: 56  },  // pin3 - 전족부 외측
+  { x: 36, y: 128 },  // pin4 - 중족부
+  { x: 40, y: 222 },  // pin5 - 뒤꿈치 왼쪽
+  { x: 64, y: 230 },  // pin6 - 뒤꿈치 오른쪽
 ]
 
 function footData(side) {
@@ -49,8 +49,8 @@ function regionStats(side) {
   return {
     toe:  Math.round((p[0] + p[1]) / 2) + '%',
     fore: p[2] + '%',
-    mid:  Math.round((p[3] + p[4]) / 2) + '%',
-    heel: p[5] + '%',
+    mid:  p[3] + '%',
+    heel: Math.round((p[4] + p[5]) / 2) + '%',
   }
 }
 
