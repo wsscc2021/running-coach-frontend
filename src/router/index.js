@@ -20,6 +20,11 @@ const router = createRouter({
       props: true
     },
     {
+      path: '/combined',
+      name: 'combined',
+      component: () => import('@/views/CombinedSessionView.vue')
+    },
+    {
       path: '/foot-pressure',
       name: 'foot-pressure',
       component: () => import('@/views/FootPressureView.vue')

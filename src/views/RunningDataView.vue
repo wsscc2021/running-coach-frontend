@@ -5,8 +5,6 @@ import { useSessionStore } from '@/stores/session'
 import StatCard from '@/components/StatCard.vue'
 import SensorChart from '@/components/SensorChart.vue'
 import HeartRateZones from '@/components/HeartRateZones.vue'
-import FootPressureMap from '@/components/FootPressureMap.vue'
-
 const props = defineProps({ sessionId: { type: String, required: true } })
 
 const store  = useSessionStore()
@@ -17,7 +15,7 @@ const activeTab = ref('heartRate')
 // sessionId가 바뀔 때마다 (최초 마운트 포함) 데이터 재요청
 watch(
   () => props.sessionId,
-  (id) => { activeTab.value = 'heartRate'; store.fetchEvents(id); store.fpEvents = null },
+  (id) => { activeTab.value = 'heartRate'; store.fetchEvents(id) },
   { immediate: true }
 )
 
@@ -25,24 +23,10 @@ watch(
 const events = computed(() => store.currentEvents)
 
 const tabs = computed(() => [
-  { key: 'heartRate',   label: '심박수', count: events.value?.heartRate?.length ?? 0 },
-  { key: 'speed',       label: '페이스', count: events.value?.speed?.length      ?? 0 },
-  { key: 'distance',    label: '거리',   count: events.value?.speed?.length      ?? 0 },
-  { key: 'footPressure', label: '발 압력', count: null },
+  { key: 'heartRate', label: '심박수', count: events.value?.heartRate?.length ?? 0 },
+  { key: 'speed',     label: '페이스', count: events.value?.speed?.length      ?? 0 },
+  { key: 'distance',  label: '거리',   count: events.value?.speed?.length      ?? 0 },
 ])
-
-// ─── 발 압력 세션 선택 ────────────────────────────────────────────
-const fpSessions = computed(() =>
-  store.sessions.filter(s => s.sessionType === 'foot_pressure')
-    .sort((a, b) => new Date(b.startTime) - new Date(a.startTime))
-)
-
-const selectedFpId = ref(null)
-
-function selectFpSession(session) {
-  selectedFpId.value = session.sessionId
-  store.fetchFpEvents(session.sessionId)
-}
 
 const chartMeta = {
   heartRate: { title: '심박수 변화', subtitle: '실시간 심박수 모니터링' },
@@ -211,63 +195,14 @@ const currentEvents = computed(() => {
         </button>
       </div>
 
-      <!-- 차트 (발 압력 탭 아닐 때) -->
-      <template v-if="activeTab !== 'footPressure'">
-        <SensorChart
-          :events="currentEvents"
-          :type="activeTab"
-          :title="chartMeta[activeTab]?.title ?? ''"
-          :subtitle="chartMeta[activeTab]?.subtitle ?? ''"
-        />
-        <HeartRateZones v-if="activeTab === 'heartRate'" />
-      </template>
-
-      <!-- 발 압력 탭 -->
-      <template v-else>
-        <div class="fp-section">
-          <div class="fp-section-head">
-            <p class="fp-section-title">발 압력 세션 선택</p>
-            <p class="fp-section-sub">연결할 발 압력 세션을 선택하세요.</p>
-          </div>
-
-          <!-- 세션 없음 -->
-          <div v-if="!fpSessions.length" class="fp-empty">
-            저장된 발 압력 세션이 없습니다.
-          </div>
-
-          <!-- 세션 목록 -->
-          <div v-else class="fp-list">
-            <div
-              v-for="s in fpSessions"
-              :key="s.sessionId"
-              class="fp-item"
-              :class="{ selected: selectedFpId === s.sessionId }"
-              @click="selectFpSession(s)"
-            >
-              <span class="fp-item-icon">👣</span>
-              <div class="fp-item-info">
-                <p class="fp-item-date">{{ formatDate(s.startTime) }}</p>
-                <p class="fp-item-id">{{ s.deviceId }}</p>
-              </div>
-              <span v-if="selectedFpId === s.sessionId" class="fp-check">✓</span>
-            </div>
-          </div>
-
-          <!-- 발 압력 맵 -->
-          <template v-if="selectedFpId">
-            <div v-if="store.fpLoading" class="fp-loading">
-              <div class="spinner"/> 발 압력 데이터 로딩 중...
-            </div>
-            <div v-else-if="store.fpEvents" class="fp-map-wrap">
-              <div class="fp-map-head">
-                <p class="fp-map-title">발 압력 맵</p>
-                <p class="fp-map-sub">{{ formatDate(fpSessions.find(s => s.sessionId === selectedFpId)?.startTime) }}</p>
-              </div>
-              <FootPressureMap :foot-pressure="store.fpEvents.footPressure ?? {}" />
-            </div>
-          </template>
-        </div>
-      </template>
+      <!-- 차트 -->
+      <SensorChart
+        :events="currentEvents"
+        :type="activeTab"
+        :title="chartMeta[activeTab]?.title ?? ''"
+        :subtitle="chartMeta[activeTab]?.subtitle ?? ''"
+      />
+      <HeartRateZones v-if="activeTab === 'heartRate'" />
     </template>
   </div>
 </template>
@@ -401,52 +336,6 @@ const currentEvents = computed(() => {
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
-
-/* ── 발 압력 탭 ── */
-.fp-section {
-  background: #fff;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
-}
-.fp-section-head { margin-bottom: 16px; }
-.fp-section-title { font-size: 15px; font-weight: 700; color: #1e293b; }
-.fp-section-sub { font-size: 12px; color: #94a3b8; margin-top: 4px; }
-
-.fp-empty { text-align: center; padding: 32px 0; color: #94a3b8; font-size: 13px; }
-
-.fp-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
-
-.fp-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border-radius: 10px;
-  border: 1.5px solid #e2e8f0;
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
-}
-.fp-item:hover { border-color: #a855f7; background: #faf5ff; }
-.fp-item.selected { border-color: #a855f7; background: #faf5ff; }
-.fp-item-icon { font-size: 20px; }
-.fp-item-info { flex: 1; }
-.fp-item-date { font-size: 13px; font-weight: 600; color: #1e293b; }
-.fp-item-id { font-size: 11px; color: #94a3b8; margin-top: 2px; }
-.fp-check { font-size: 16px; color: #a855f7; font-weight: 700; }
-
-.fp-loading {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 24px 0;
-  color: #94a3b8;
-  font-size: 13px;
-}
-.fp-map-wrap { border-top: 1px solid #f1f5f9; padding-top: 20px; }
-.fp-map-head { margin-bottom: 20px; }
-.fp-map-title { font-size: 14px; font-weight: 700; color: #1e293b; }
-.fp-map-sub { font-size: 12px; color: #94a3b8; margin-top: 3px; }
 
 /* ── 반응형 ── */
 @media (max-width: 640px) {
