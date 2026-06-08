@@ -63,6 +63,36 @@ const pressureDev = computed(() => {
   return '±' + Math.round(std) + '%'
 })
 
+// CoP 계산: CoP_x = Σ(P_i × x_i) / ΣP_i,  CoP_y = Σ(P_i × y_i) / ΣP_i
+function computeCoP(side) {
+  const vals = props.footPressure[side]
+  if (!vals || vals.length < 6) return null
+  const totalP = vals.reduce((s, v) => s + v, 0)
+  if (!totalP) return null
+  const x = vals.reduce((s, v, i) => s + v * SENSOR_POS[i].x, 0) / totalP
+  const y = vals.reduce((s, v, i) => s + v * SENSOR_POS[i].y, 0) / totalP
+  return { x, y }
+}
+
+const leftCoP  = computed(() => computeCoP('left'))
+const rightCoP = computed(() => computeCoP('right'))
+
+// 센서 y: 44(발가락) ~ 230(뒤꿈치),  x: 26(내측) ~ 82(외측)
+const COP_Y = { min: 44, max: 230 }
+const COP_X = { min: 26, max: 82  }
+
+function copPct(cop) {
+  if (!cop) return null
+  return {
+    fb: Math.round((cop.y - COP_Y.min) / (COP_Y.max - COP_Y.min) * 100),
+    ml: Math.round((cop.x - COP_X.min) / (COP_X.max - COP_X.min) * 100),
+  }
+}
+
+// 템플릿에서 side 키로 접근: copByFoot[side], copPctByFoot[side]
+const copByFoot    = computed(() => ({ left: leftCoP.value,          right: rightCoP.value         }))
+const copPctByFoot = computed(() => ({ left: copPct(leftCoP.value),  right: copPct(rightCoP.value) }))
+
 // 전후 압력 편차: 전족부(pin1-3) vs 후족부(pin4-6) 평균 비율 차이
 const fbDev = computed(() => {
   const l = props.footPressure.left
@@ -115,6 +145,26 @@ const FOOT_PATH = `M 54 22 C 84 18 103 35 98 58 C 92 80 84 85 87 100
             <text :x="SENSOR_POS[i].x" :y="SENSOR_POS[i].y + 4"
               class="dot-label" text-anchor="middle">{{ s.pct }}</text>
           </g>
+
+          <!-- CoP 마커: 십자선 + 중심점 -->
+          <g v-if="copByFoot[side]">
+            <circle
+              :cx="copByFoot[side].x" :cy="copByFoot[side].y"
+              r="11" fill="none" stroke="#0ea5e9" stroke-width="1.5" stroke-dasharray="3 2"/>
+            <line :x1="copByFoot[side].x - 15" :y1="copByFoot[side].y"
+                  :x2="copByFoot[side].x - 5"  :y2="copByFoot[side].y"
+                  stroke="#0ea5e9" stroke-width="1.5" stroke-linecap="round"/>
+            <line :x1="copByFoot[side].x + 5"  :y1="copByFoot[side].y"
+                  :x2="copByFoot[side].x + 15" :y2="copByFoot[side].y"
+                  stroke="#0ea5e9" stroke-width="1.5" stroke-linecap="round"/>
+            <line :x1="copByFoot[side].x" :y1="copByFoot[side].y - 15"
+                  :x2="copByFoot[side].x" :y2="copByFoot[side].y - 5"
+                  stroke="#0ea5e9" stroke-width="1.5" stroke-linecap="round"/>
+            <line :x1="copByFoot[side].x" :y1="copByFoot[side].y + 5"
+                  :x2="copByFoot[side].x" :y2="copByFoot[side].y + 14"
+                  stroke="#0ea5e9" stroke-width="1.5" stroke-linecap="round"/>
+            <circle :cx="copByFoot[side].x" :cy="copByFoot[side].y" r="3" fill="#0ea5e9"/>
+          </g>
         </svg>
 
         <!-- 지역별 통계 -->
@@ -134,6 +184,17 @@ const FOOT_PATH = `M 54 22 C 84 18 103 35 98 58 C 92 80 84 85 87 100
               </span>
             </template>
           </div>
+
+          <!-- CoP 위치 정보 -->
+          <template v-if="copPctByFoot[side]">
+            <p class="region-title cop-title">압력 중심 (CoP)</p>
+            <div class="region-grid">
+              <span class="region-key">전후 위치</span>
+              <span class="region-val cop-val">{{ copPctByFoot[side].fb }}%</span>
+              <span class="region-key">내외 위치</span>
+              <span class="region-val cop-val">{{ copPctByFoot[side].ml }}%</span>
+            </div>
+          </template>
         </div>
       </div>
     </div>
@@ -149,6 +210,17 @@ const FOOT_PATH = `M 54 22 C 84 18 103 35 98 58 C 92 80 84 85 87 100
       ]" :key="l.label" class="legend-item">
         <span class="legend-dot" :style="{ background: l.color }"/>
         {{ l.label }}
+      </span>
+      <span class="legend-item">
+        <svg width="14" height="14" viewBox="-7 -7 14 14" style="flex-shrink:0">
+          <circle r="6" fill="none" stroke="#0ea5e9" stroke-width="1.3" stroke-dasharray="2 1.5"/>
+          <line x1="-6" y1="0" x2="-2" y2="0" stroke="#0ea5e9" stroke-width="1.3" stroke-linecap="round"/>
+          <line x1="2"  y1="0" x2="6"  y2="0" stroke="#0ea5e9" stroke-width="1.3" stroke-linecap="round"/>
+          <line x1="0" y1="-6" x2="0" y2="-2" stroke="#0ea5e9" stroke-width="1.3" stroke-linecap="round"/>
+          <line x1="0" y1="2"  x2="0" y2="6"  stroke="#0ea5e9" stroke-width="1.3" stroke-linecap="round"/>
+          <circle r="2" fill="#0ea5e9"/>
+        </svg>
+        압력 중심 (CoP)
       </span>
     </div>
 
@@ -227,6 +299,9 @@ const FOOT_PATH = `M 54 22 C 84 18 103 35 98 58 C 92 80 84 85 87 100
 .summary-card.green  .sum-value { color: #16a34a; }
 .summary-card.purple .sum-value { color: #9333ea; }
 .sum-sub { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+
+.cop-title { margin-top: 12px; }
+.cop-val   { color: #0ea5e9; }
 
 @media (max-width: 640px) {
   .feet-row { gap: 24px; }
