@@ -136,6 +136,10 @@ function formatDuration(s, e) {
         @click="activeTab = 'footPressure'">
         👣 발 압력
       </button>
+      <button class="main-tab risk" :class="{ active: activeTab === 'risk' }"
+        @click="activeTab = 'risk'">
+        ⚠ 위험 감지
+      </button>
     </div>
 
     <!-- ── 러닝 탭 ── -->
@@ -186,23 +190,8 @@ function formatDuration(s, e) {
       </template>
     </template>
 
-    <!-- ── 위험 감지 분석 (running + fp 융합) ── -->
-    <div
-      v-if="activeHeartRate.length && store.fpEvents?.footPressure"
-      class="card risk-card"
-    >
-      <div class="card-head">
-        <p class="card-title">위험 감지 분석</p>
-        <p class="card-sub">러닝 데이터 + 발 압력 융합 분석</p>
-      </div>
-      <RiskAnalysis
-        :foot-pressure="store.fpEvents.footPressure"
-        :heart-rate-events="activeHeartRate"
-      />
-    </div>
-
     <!-- ── 발 압력 탭 ── -->
-    <template v-else>
+    <template v-else-if="activeTab === 'footPressure'">
       <div v-if="store.fpLoading" class="state-msg"><div class="spinner"/>발 압력 데이터 로딩 중...</div>
       <div v-else-if="!store.fpEvents?.footPressure" class="state-msg">
         발 압력 데이터가 없습니다.
@@ -216,6 +205,20 @@ function formatDuration(s, e) {
           <FootPressureMap :foot-pressure="store.fpEvents.footPressure" />
         </div>
       </template>
+    </template>
+
+    <!-- ── 위험 감지 탭 ── -->
+    <template v-else-if="activeTab === 'risk'">
+      <div class="card">
+        <div class="card-head">
+          <p class="card-title">위험 감지 분석</p>
+          <p class="card-sub">러닝 데이터 + 발 압력 융합 분석</p>
+        </div>
+        <RiskAnalysis
+          :foot-pressure="store.fpEvents?.footPressure ?? {}"
+          :heart-rate-events="activeHeartRate"
+        />
+      </div>
     </template>
   </div>
 </template>
@@ -273,6 +276,7 @@ function formatDuration(s, e) {
 .main-tab:hover { border-color: #cbd5e1; color: #334155; }
 .main-tab.running.active { border-color: #3b82f6; color: #2563eb; background: #eff6ff; }
 .main-tab.fp.active      { border-color: #a855f7; color: #9333ea; background: #faf5ff; }
+.main-tab.risk.active    { border-color: #dc2626; color: #dc2626; background: #fef2f2; }
 
 /* ── 러닝 탭 공통 ── */
 .stats { display: flex; gap: 16px; margin-bottom: 20px; }
@@ -318,7 +322,6 @@ function formatDuration(s, e) {
   padding: 24px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.07);
 }
-.risk-card  { margin-bottom: 20px; }
 .card-head  { margin-bottom: 24px; }
 .card-title { font-size: 16px; font-weight: 700; color: #1e293b; }
 .card-sub { font-size: 12px; color: #94a3b8; margin-top: 4px; }
