@@ -6,6 +6,7 @@ import StatCard from '@/components/StatCard.vue'
 import SensorChart from '@/components/SensorChart.vue'
 import HeartRateZones from '@/components/HeartRateZones.vue'
 import FootPressureMap from '@/components/FootPressureMap.vue'
+import RiskAnalysis   from '@/components/RiskAnalysis.vue'
 
 const route  = useRoute()
 const router = useRouter()
@@ -185,6 +186,21 @@ function formatDuration(s, e) {
       </template>
     </template>
 
+    <!-- ── 위험 감지 분석 (running + fp 융합) ── -->
+    <div
+      v-if="activeHeartRate.length && store.fpEvents?.footPressure"
+      class="card risk-card"
+    >
+      <div class="card-head">
+        <p class="card-title">위험 감지 분석</p>
+        <p class="card-sub">러닝 데이터 + 발 압력 융합 분석</p>
+      </div>
+      <RiskAnalysis
+        :foot-pressure="store.fpEvents.footPressure"
+        :heart-rate-events="activeHeartRate"
+      />
+    </div>
+
     <!-- ── 발 압력 탭 ── -->
     <template v-else>
       <div v-if="store.fpLoading" class="state-msg"><div class="spinner"/>발 압력 데이터 로딩 중...</div>
@@ -302,7 +318,8 @@ function formatDuration(s, e) {
   padding: 24px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.07);
 }
-.card-head { margin-bottom: 24px; }
+.risk-card  { margin-bottom: 20px; }
+.card-head  { margin-bottom: 24px; }
 .card-title { font-size: 16px; font-weight: 700; color: #1e293b; }
 .card-sub { font-size: 12px; color: #94a3b8; margin-top: 4px; }
 

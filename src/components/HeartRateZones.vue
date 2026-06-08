@@ -90,7 +90,7 @@ function fmtTime(secs) {
           </span>
         </div>
         <div class="summary-item">
-          <span class="sum-label">훈련 유형</span>
+          <span class="sum-label">러닝 유형</span>
           <span class="sum-value" :style="{ color: intensityLabel.color }">
             {{ intensityLabel.text }}
           </span>
