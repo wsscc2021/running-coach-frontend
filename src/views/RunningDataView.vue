@@ -202,7 +202,7 @@ const currentEvents = computed(() => {
         :title="chartMeta[activeTab]?.title ?? ''"
         :subtitle="chartMeta[activeTab]?.subtitle ?? ''"
       />
-      <HeartRateZones v-if="activeTab === 'heartRate'" />
+      <HeartRateZones v-if="activeTab === 'heartRate'" :heartRateEvents="activeHeartRate" />
     </template>
   </div>
 </template>
