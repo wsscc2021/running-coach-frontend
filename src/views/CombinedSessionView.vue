@@ -6,7 +6,6 @@ import StatCard from '@/components/StatCard.vue'
 import SensorChart from '@/components/SensorChart.vue'
 import HeartRateZones from '@/components/HeartRateZones.vue'
 import FootPressureMap from '@/components/FootPressureMap.vue'
-import RiskAnalysis   from '@/components/RiskAnalysis.vue'
 import ComprehensiveAnalysis from '@/components/ComprehensiveAnalysis.vue'
 
 const route  = useRoute()
@@ -21,10 +20,11 @@ const activeTab = ref('analysis')
 watch(runningId, id => { if (id) store.fetchEvents(id) },   { immediate: true })
 watch(fpId,      id => { if (id) store.fetchFpEvents(id) }, { immediate: true })
 
-// 종합 분석: running 또는 fp 세션이 확정되는 시점에 한 번 요청
+// 종합 분석: 세션이 확정되면 분석 데이터 요청 (Claude 미호출)
 watch(
   [runningId, fpId],
   ([rid, fid]) => {
+    store.resetFeedback()
     if (rid || fid) store.fetchCombinedAnalysis(rid, fid)
   },
   { immediate: true },
@@ -150,10 +150,6 @@ function formatDuration(s, e) {
         @click="activeTab = 'footPressure'">
         👣 발 압력
       </button>
-      <button class="main-tab risk" :class="{ active: activeTab === 'risk' }"
-        @click="activeTab = 'risk'">
-        ⚠ 위험 감지
-      </button>
     </div>
 
     <!-- ── 종합 분석 탭 ── -->
@@ -162,7 +158,15 @@ function formatDuration(s, e) {
         <div class="spinner"/>AI 분석 중... 잠시만 기다려 주세요.
       </div>
       <div v-else-if="store.analysisError" class="state-msg error">{{ store.analysisError }}</div>
-      <ComprehensiveAnalysis v-else :analysis="store.combinedAnalysis" />
+      <ComprehensiveAnalysis
+        v-else
+        :analysis="store.combinedAnalysis"
+        :feedback="store.analysisFeedback"
+        :feedback-loading="store.feedbackLoading"
+        :feedback-error="store.feedbackError"
+        :running-session-id="runningId"
+        :fp-session-id="fpId"
+      />
     </template>
 
     <!-- ── 러닝 탭 ── -->
@@ -230,19 +234,6 @@ function formatDuration(s, e) {
       </template>
     </template>
 
-    <!-- ── 위험 감지 탭 ── -->
-    <template v-else-if="activeTab === 'risk'">
-      <div class="card">
-        <div class="card-head">
-          <p class="card-title">위험 감지 분석</p>
-          <p class="card-sub">러닝 데이터 + 발 압력 융합 분석</p>
-        </div>
-        <RiskAnalysis
-          :foot-pressure="store.fpEvents?.footPressure ?? {}"
-          :heart-rate-events="activeHeartRate"
-        />
-      </div>
-    </template>
   </div>
 </template>
 
@@ -300,7 +291,6 @@ function formatDuration(s, e) {
 .main-tab.analysis.active { border-color: #0ea5e9; color: #0284c7; background: #f0f9ff; }
 .main-tab.running.active  { border-color: #3b82f6; color: #2563eb; background: #eff6ff; }
 .main-tab.fp.active       { border-color: #a855f7; color: #9333ea; background: #faf5ff; }
-.main-tab.risk.active     { border-color: #dc2626; color: #dc2626; background: #fef2f2; }
 
 /* ── 러닝 탭 공통 ── */
 .stats { display: flex; gap: 16px; margin-bottom: 20px; }

@@ -68,10 +68,35 @@ export const useSessionStore = defineStore('session', () => {
     }
   }
 
+  const analysisFeedback = ref(null)
+  const feedbackLoading  = ref(false)
+  const feedbackError    = ref(null)
+
+  async function fetchAnalysisFeedback(runningSessionId, fpSessionId) {
+    feedbackLoading.value  = true
+    feedbackError.value    = null
+    analysisFeedback.value = null
+    try {
+      const res = await analysisApi.getFeedback(runningSessionId, fpSessionId)
+      analysisFeedback.value = res.feedback
+    } catch (e) {
+      feedbackError.value = e.message
+    } finally {
+      feedbackLoading.value = false
+    }
+  }
+
+  function resetFeedback() {
+    analysisFeedback.value = null
+    feedbackError.value    = null
+    feedbackLoading.value  = false
+  }
+
   return {
     sessions, currentEvents, loading, error, userId,
     fetchSessions, fetchEvents,
     fpEvents, fpLoading, fetchFpEvents,
     combinedAnalysis, analysisLoading, analysisError, fetchCombinedAnalysis,
+    analysisFeedback, feedbackLoading, feedbackError, fetchAnalysisFeedback, resetFeedback,
   }
 })

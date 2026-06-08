@@ -1,9 +1,21 @@
 <script setup>
 import { computed } from 'vue'
+import { useSessionStore } from '@/stores/session'
 
 const props = defineProps({
-  analysis: { type: Object, default: null },  // backend /v1/analysis response
+  analysis:        { type: Object,  default: null },
+  feedback:        { type: String,  default: null },
+  feedbackLoading: { type: Boolean, default: false },
+  feedbackError:   { type: String,  default: null },
+  runningSessionId:{ type: String,  default: null },
+  fpSessionId:     { type: String,  default: null },
 })
+
+const store = useSessionStore()
+
+function requestFeedback() {
+  store.fetchAnalysisFeedback(props.runningSessionId, props.fpSessionId)
+}
 
 // ── 심박수 구간 색상 ─────────────────────────────────────────────
 const ZONE_META = [
@@ -17,8 +29,6 @@ const ZONE_META = [
 const hrData = computed(() => props.analysis?.heartRate ?? null)
 const fpData = computed(() => props.analysis?.footPressure ?? null)
 const risks  = computed(() => props.analysis?.risks ?? [])
-const feedback      = computed(() => props.analysis?.feedback ?? null)
-const feedbackError = computed(() => props.analysis?.feedbackError ?? null)
 
 // 심박수 구간 배열 (zone 1~5 순서)
 const zoneRows = computed(() => {
@@ -68,10 +78,15 @@ const riskLevelColor = {
             <p class="section-sub">Claude가 분석한 오늘의 러닝 종합 평가</p>
           </div>
         </div>
+
+        <!-- 결과 표시 -->
         <div v-if="feedback" class="feedback-body">
           <p v-for="(para, i) in feedback.split('\n\n').filter(p => p.trim())" :key="i"
              class="feedback-para">{{ para.trim() }}</p>
+          <button class="feedback-retry-btn" @click="requestFeedback">다시 분석하기</button>
         </div>
+
+        <!-- 오류 -->
         <div v-else-if="feedbackError" class="feedback-error">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2">
             <circle cx="12" cy="12" r="10"/>
@@ -81,13 +96,25 @@ const riskLevelColor = {
             <p class="error-title">AI 피드백 오류</p>
             <p class="error-detail">{{ feedbackError }}</p>
           </div>
+          <button class="feedback-retry-btn standalone" @click="requestFeedback">다시 시도</button>
         </div>
-        <div v-else class="feedback-unavail">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
-            <line x1="12" y1="16" x2="12.01" y2="16"/>
-          </svg>
-          AI 피드백을 가져올 수 없습니다.
+
+        <!-- 로딩 -->
+        <div v-else-if="feedbackLoading" class="feedback-loading">
+          <div class="spinner" />
+          AI가 세션을 분석하고 있습니다...
+        </div>
+
+        <!-- 초기 상태: 버튼 -->
+        <div v-else class="feedback-prompt">
+          <p class="prompt-desc">분석 데이터를 바탕으로 AI 코치가 맞춤 피드백을 제공합니다.</p>
+          <button class="feedback-cta-btn" @click="requestFeedback">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 8v4l3 3"/>
+              <polyline points="16 2 22 2 22 8"/>
+            </svg>
+            AI 코치 피드백 받기
+          </button>
         </div>
       </section>
 
@@ -311,15 +338,70 @@ const riskLevelColor = {
   color: #1e293b;
 }
 
-.feedback-unavail {
+/* 초기 상태 — 버튼 */
+.feedback-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 0 4px;
+}
+.prompt-desc {
+  font-size: 13px;
+  color: #64748b;
+  text-align: center;
+}
+.feedback-cta-btn {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #94a3b8;
-  font-size: 13px;
-  padding: 8px 0;
+  background: #0ea5e9;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 11px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
 }
+.feedback-cta-btn:hover { background: #0284c7; }
 
+/* 로딩 */
+.feedback-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #64748b;
+  font-size: 13px;
+  padding: 4px 0;
+}
+.spinner {
+  width: 18px; height: 18px;
+  border: 2.5px solid #e2e8f0;
+  border-top-color: #0ea5e9;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* 다시 분석 버튼 */
+.feedback-retry-btn {
+  margin-top: 14px;
+  background: none;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 12px;
+  color: #64748b;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.feedback-retry-btn:hover { border-color: #0ea5e9; color: #0284c7; }
+.feedback-retry-btn.standalone { display: block; margin-top: 10px; }
+
+/* 오류 */
 .feedback-error {
   display: flex;
   align-items: flex-start;

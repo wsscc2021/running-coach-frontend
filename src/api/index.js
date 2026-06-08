@@ -31,6 +31,12 @@ export const analysisApi = {
     if (fpSessionId) params.set('fpSessionId', fpSessionId)
     return apiFetch(`/analysis?${params}`)
   },
+  getFeedback: (runningSessionId, fpSessionId) => {
+    const params = new URLSearchParams()
+    if (runningSessionId) params.set('runningSessionId', runningSessionId)
+    if (fpSessionId) params.set('fpSessionId', fpSessionId)
+    return apiFetch(`/analysis/feedback?${params}`)
+  },
 }
 
 export const collectionApi = {
