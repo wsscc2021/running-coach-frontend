@@ -47,15 +47,6 @@ const rightData  = computed(() => footData('right'))
 const leftStats  = computed(() => regionStats('left'))
 const rightStats = computed(() => regionStats('right'))
 
-const balance = computed(() => {
-  const l = props.footPressure.left, r = props.footPressure.right
-  if (!l?.length || !r?.length) return '--'
-  const lA = l.reduce((s, v) => s + toPct(v), 0) / l.length
-  const rA = r.reduce((s, v) => s + toPct(v), 0) / r.length
-  const tot = lA + rA
-  if (!tot) return '--'
-  return Math.round((1 - Math.abs(lA - rA) / tot) * 100) + '%'
-})
 
 const avgPressure = computed(() => {
   const all = [...(props.footPressure.left ?? []), ...(props.footPressure.right ?? [])]
@@ -149,18 +140,13 @@ const FOOT_PATH = `M 54 22 C 84 18 103 35 98 58 C 92 80 84 85 87 100
 
     <!-- 요약 카드 -->
     <div class="summary-row">
-      <div class="summary-card blue">
-        <p class="sum-label">좌우 균형도</p>
-        <p class="sum-value">{{ balance }}</p>
-        <p class="sum-sub">{{ balance !== '--' && parseInt(balance) >= 90 ? '매우 우수' : '불균형' }}</p>
-      </div>
       <div class="summary-card green">
         <p class="sum-label">평균 압력</p>
         <p class="sum-value">{{ avgPressure }}</p>
         <p class="sum-sub">{{ avgPressure !== '--' && parseInt(avgPressure) < 70 ? '정상 범위' : '높은 압력' }}</p>
       </div>
       <div class="summary-card purple">
-        <p class="sum-label">압력 편차</p>
+        <p class="sum-label">좌우 압력 편차(밸런스)</p>
         <p class="sum-value">{{ pressureDev }}</p>
         <p class="sum-sub">{{ pressureDev !== '--' && parseInt(pressureDev.replace('±','')) < 5 ? '안정적' : '불안정' }}</p>
       </div>
