@@ -162,7 +162,7 @@ const FOOT_PATH = `M 54 22 C 84 18 103 35 98 58 C 92 80 84 85 87 100
       <div class="summary-card purple">
         <p class="sum-label">압력 편차</p>
         <p class="sum-value">{{ pressureDev }}</p>
-        <p class="sum-sub">{{ pressureDev !== '--' && parseInt(pressureDev.replace('±','')) < 20 ? '안정적' : '불안정' }}</p>
+        <p class="sum-sub">{{ pressureDev !== '--' && parseInt(pressureDev.replace('±','')) < 5 ? '안정적' : '불안정' }}</p>
       </div>
     </div>
   </div>
