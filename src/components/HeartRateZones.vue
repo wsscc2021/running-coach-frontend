@@ -56,10 +56,9 @@ const intensityLabel = computed(() => {
   const high = (s[3]?.pct ?? 0) + (s[4]?.pct ?? 0)
   const aero = s[2]?.pct ?? 0
   const warm = s[1]?.pct ?? 0
-  if (high >= 40)   return { text: '고강도 인터벌 훈련',  color: '#ea580c' }
-  if (aero >= 55)   return { text: '유산소 기초 훈련',    color: '#d97706' }
-  if (warm >= 50)   return { text: '가벼운 워밍업 세션',  color: '#16a34a' }
-  return               { text: '복합 강도 훈련',          color: '#7c3aed' }
+  if (high >= 40)   return { text: '고강도 훈련',   color: '#ea580c' }
+  if (aero >= 55)   return { text: '유산소 기초',   color: '#d97706' }
+  return               { text: '가벼운 워밍업', color: '#16a34a' }
 })
 
 function fmtTime(secs) {
