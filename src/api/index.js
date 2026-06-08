@@ -24,6 +24,15 @@ export const sessionsApi = {
     apiFetch(`/sessions/${encodeURIComponent(sessionId)}/events`)
 }
 
+export const analysisApi = {
+  getCombined: (runningSessionId, fpSessionId) => {
+    const params = new URLSearchParams()
+    if (runningSessionId) params.set('runningSessionId', runningSessionId)
+    if (fpSessionId) params.set('fpSessionId', fpSessionId)
+    return apiFetch(`/analysis?${params}`)
+  },
+}
+
 export const collectionApi = {
   getState: () => apiFetch('/collection'),
   setState: (collecting) => jsonPut('/collection', { collecting }),

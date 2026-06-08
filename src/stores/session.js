@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { sessionsApi } from '@/api'
+import { sessionsApi, analysisApi } from '@/api'
 
 export const useSessionStore = defineStore('session', () => {
   const sessions = ref([])
@@ -51,5 +51,27 @@ export const useSessionStore = defineStore('session', () => {
     }
   }
 
-  return { sessions, currentEvents, loading, error, userId, fetchSessions, fetchEvents, fpEvents, fpLoading, fetchFpEvents }
+  const combinedAnalysis = ref(null)
+  const analysisLoading  = ref(false)
+  const analysisError    = ref(null)
+
+  async function fetchCombinedAnalysis(runningSessionId, fpSessionId) {
+    analysisLoading.value  = true
+    analysisError.value    = null
+    combinedAnalysis.value = null
+    try {
+      combinedAnalysis.value = await analysisApi.getCombined(runningSessionId, fpSessionId)
+    } catch (e) {
+      analysisError.value = e.message
+    } finally {
+      analysisLoading.value = false
+    }
+  }
+
+  return {
+    sessions, currentEvents, loading, error, userId,
+    fetchSessions, fetchEvents,
+    fpEvents, fpLoading, fetchFpEvents,
+    combinedAnalysis, analysisLoading, analysisError, fetchCombinedAnalysis,
+  }
 })

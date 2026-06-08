@@ -7,6 +7,7 @@ import SensorChart from '@/components/SensorChart.vue'
 import HeartRateZones from '@/components/HeartRateZones.vue'
 import FootPressureMap from '@/components/FootPressureMap.vue'
 import RiskAnalysis   from '@/components/RiskAnalysis.vue'
+import ComprehensiveAnalysis from '@/components/ComprehensiveAnalysis.vue'
 
 const route  = useRoute()
 const router = useRouter()
@@ -15,10 +16,19 @@ const store  = useSessionStore()
 const runningId = computed(() => route.query.running)
 const fpId      = computed(() => route.query.fp)
 
-const activeTab = ref('running')
+const activeTab = ref('analysis')
 
 watch(runningId, id => { if (id) store.fetchEvents(id) },   { immediate: true })
 watch(fpId,      id => { if (id) store.fetchFpEvents(id) }, { immediate: true })
+
+// 종합 분석: running 또는 fp 세션이 확정되는 시점에 한 번 요청
+watch(
+  [runningId, fpId],
+  ([rid, fid]) => {
+    if (rid || fid) store.fetchCombinedAnalysis(rid, fid)
+  },
+  { immediate: true },
+)
 
 const runningSess = computed(() => store.sessions.find(s => s.sessionId === runningId.value))
 const fpSess      = computed(() => store.sessions.find(s => s.sessionId === fpId.value))
@@ -128,6 +138,10 @@ function formatDuration(s, e) {
 
     <!-- 주 탭 -->
     <div class="main-tab-bar">
+      <button class="main-tab analysis" :class="{ active: activeTab === 'analysis' }"
+        @click="activeTab = 'analysis'">
+        ✦ 종합 분석
+      </button>
       <button class="main-tab running" :class="{ active: activeTab === 'running' }"
         @click="activeTab = 'running'">
         🏃 러닝 데이터
@@ -142,8 +156,17 @@ function formatDuration(s, e) {
       </button>
     </div>
 
+    <!-- ── 종합 분석 탭 ── -->
+    <template v-if="activeTab === 'analysis'">
+      <div v-if="store.analysisLoading" class="state-msg">
+        <div class="spinner"/>AI 분석 중... 잠시만 기다려 주세요.
+      </div>
+      <div v-else-if="store.analysisError" class="state-msg error">{{ store.analysisError }}</div>
+      <ComprehensiveAnalysis v-else :analysis="store.combinedAnalysis" />
+    </template>
+
     <!-- ── 러닝 탭 ── -->
-    <template v-if="activeTab === 'running'">
+    <template v-else-if="activeTab === 'running'">
       <div v-if="store.loading" class="state-msg"><div class="spinner"/>데이터를 불러오는 중...</div>
       <div v-else-if="store.error" class="state-msg error">{{ store.error }}</div>
       <div v-else-if="!events?.heartRate?.length && !events?.speed?.length" class="state-msg">
@@ -274,9 +297,10 @@ function formatDuration(s, e) {
   transition: all 0.15s;
 }
 .main-tab:hover { border-color: #cbd5e1; color: #334155; }
-.main-tab.running.active { border-color: #3b82f6; color: #2563eb; background: #eff6ff; }
-.main-tab.fp.active      { border-color: #a855f7; color: #9333ea; background: #faf5ff; }
-.main-tab.risk.active    { border-color: #dc2626; color: #dc2626; background: #fef2f2; }
+.main-tab.analysis.active { border-color: #0ea5e9; color: #0284c7; background: #f0f9ff; }
+.main-tab.running.active  { border-color: #3b82f6; color: #2563eb; background: #eff6ff; }
+.main-tab.fp.active       { border-color: #a855f7; color: #9333ea; background: #faf5ff; }
+.main-tab.risk.active     { border-color: #dc2626; color: #dc2626; background: #fef2f2; }
 
 /* ── 러닝 탭 공통 ── */
 .stats { display: flex; gap: 16px; margin-bottom: 20px; }
