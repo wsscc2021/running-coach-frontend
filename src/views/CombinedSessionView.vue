@@ -181,7 +181,7 @@ function formatDuration(s, e) {
           :title="chartMeta[activeRunningTab]?.title ?? ''"
           :subtitle="chartMeta[activeRunningTab]?.subtitle ?? ''"
         />
-        <HeartRateZones v-if="activeRunningTab === 'heartRate'" />
+        <HeartRateZones v-if="activeRunningTab === 'heartRate'" :heartRateEvents="activeHeartRate" />
       </template>
     </template>
 
