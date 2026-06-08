@@ -63,6 +63,20 @@ const pressureDev = computed(() => {
   return '±' + Math.round(std) + '%'
 })
 
+// 전후 압력 편차: 전족부(pin1-3) vs 후족부(pin4-6) 평균 비율 차이
+const fbDev = computed(() => {
+  const l = props.footPressure.left
+  const r = props.footPressure.right
+  if (!l?.length || !r?.length) return '--'
+  const front = [...l.slice(0, 3), ...r.slice(0, 3)].map(toPct)
+  const back  = [...l.slice(3, 6), ...r.slice(3, 6)].map(toPct)
+  const frontAvg = front.reduce((s, v) => s + v, 0) / front.length
+  const backAvg  = back.reduce((s, v) => s + v, 0) / back.length
+  const tot = frontAvg + backAvg
+  if (!tot) return '--'
+  return '±' + Math.round(Math.abs(frontAvg - backAvg) / tot * 100) + '%'
+})
+
 const FOOT_PATH = `M 54 22 C 84 18 103 35 98 58 C 92 80 84 85 87 100
   C 89 118 92 138 87 158 C 82 178 76 195 74 215
   C 71 232 67 248 61 260 C 55 270 42 272 34 268
@@ -149,6 +163,11 @@ const FOOT_PATH = `M 54 22 C 84 18 103 35 98 58 C 92 80 84 85 87 100
         <p class="sum-label">좌우 압력 편차(밸런스)</p>
         <p class="sum-value">{{ pressureDev }}</p>
         <p class="sum-sub">{{ pressureDev !== '--' && parseInt(pressureDev.replace('±','')) < 5 ? '안정적' : '불안정' }}</p>
+      </div>
+      <div class="summary-card blue">
+        <p class="sum-label">전후 압력 편차(밸런스)</p>
+        <p class="sum-value">{{ fbDev }}</p>
+        <p class="sum-sub">{{ fbDev !== '--' && parseInt(fbDev.replace('±','')) < 20 ? '균형' : '불균형' }}</p>
       </div>
     </div>
   </div>
