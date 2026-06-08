@@ -17,7 +17,8 @@ const ZONE_META = [
 const hrData = computed(() => props.analysis?.heartRate ?? null)
 const fpData = computed(() => props.analysis?.footPressure ?? null)
 const risks  = computed(() => props.analysis?.risks ?? [])
-const feedback = computed(() => props.analysis?.feedback ?? null)
+const feedback      = computed(() => props.analysis?.feedback ?? null)
+const feedbackError = computed(() => props.analysis?.feedbackError ?? null)
 
 // 심박수 구간 배열 (zone 1~5 순서)
 const zoneRows = computed(() => {
@@ -70,6 +71,16 @@ const riskLevelColor = {
         <div v-if="feedback" class="feedback-body">
           <p v-for="(para, i) in feedback.split('\n\n').filter(p => p.trim())" :key="i"
              class="feedback-para">{{ para.trim() }}</p>
+        </div>
+        <div v-else-if="feedbackError" class="feedback-error">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <div>
+            <p class="error-title">AI 피드백 오류</p>
+            <p class="error-detail">{{ feedbackError }}</p>
+          </div>
         </div>
         <div v-else class="feedback-unavail">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2">
@@ -308,6 +319,19 @@ const riskLevelColor = {
   font-size: 13px;
   padding: 8px 0;
 }
+
+.feedback-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.feedback-error svg { flex-shrink: 0; margin-top: 2px; }
+.error-title  { font-size: 13px; font-weight: 700; color: #dc2626; margin-bottom: 4px; }
+.error-detail { font-size: 12px; color: #7f1d1d; word-break: break-all; }
 
 /* ── 심박수 ── */
 .stat-chips {
